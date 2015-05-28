@@ -11,8 +11,6 @@
 @interface ViewControllerWithScrollView ()
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *scrollViewBottomConstraint;
 @property (nonatomic, weak) IBOutlet NSLayoutConstraint *contentViewHeightConstraint;
-@property (nonatomic, weak) IBOutlet UIScrollView *scrollView;
-@property (nonatomic, weak) IBOutlet UIView *contentView;
 @end
 
 @implementation ViewControllerWithScrollView
