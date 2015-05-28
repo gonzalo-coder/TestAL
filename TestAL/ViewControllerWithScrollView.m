@@ -9,68 +9,108 @@
 #import "ViewControllerWithScrollView.h"
 
 @interface ViewControllerWithScrollView ()
-@property (strong, nonatomic) IBOutlet NSLayoutConstraint *contentViewBottomConstraint;
-@property (strong, nonatomic) IBOutlet UIScrollView *scrollView;
-- (IBAction)doneAction:(id)sender;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *scrollViewBottomConstraint;
+@property (nonatomic, weak) IBOutlet NSLayoutConstraint *contentViewHeightConstraint;
+@property (nonatomic, weak) IBOutlet UIScrollView *scrollView;
+@property (nonatomic, weak) IBOutlet UIView *contentView;
 @end
 
 @implementation ViewControllerWithScrollView
 
-- (void)viewDidLoad {
-    [super viewDidLoad];
-
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(keyboardWillShow:)
-                                                 name:UIKeyboardWillShowNotification
-                                               object:nil];
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(keyboardWillHide:)
-                                                 name:UIKeyboardWillHideNotification
-                                               object:nil];
+- (void)viewDidLoad
+{
+  [super viewDidLoad];
+  [self setAutomaticallyAdjustsScrollViewInsets:NO];
+  
+  [[NSNotificationCenter defaultCenter] addObserver:self
+                                           selector:@selector(keyboardWillShow:)
+                                               name:UIKeyboardWillShowNotification
+                                             object:nil];
+  
+  [[NSNotificationCenter defaultCenter] addObserver:self
+                                           selector:@selector(keyboardWillHide:)
+                                               name:UIKeyboardWillHideNotification
+                                             object:nil];
+  
+  UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(dismissKeyboard:)];
+  [[self view] addGestureRecognizer:tap];
 }
 
-- (void)didReceiveMemoryWarning {
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
+- (void)viewDidLayoutSubviews
+{
+  id topLayoutGuide = [self topLayoutGuide];
+  id bottomLayoutGuide = [self bottomLayoutGuide];
+  
+  CGFloat topLayoutGuideHeight = CGRectGetHeight([topLayoutGuide frame]);
+  CGFloat bottomLayoutGuideHeight = CGRectGetHeight([bottomLayoutGuide frame]);
+  CGFloat viewHeight = CGRectGetHeight([[self view] bounds]);
+
+  CGFloat contentViewHeight = viewHeight - topLayoutGuideHeight - bottomLayoutGuideHeight;
+  [[self contentViewHeightConstraint] setConstant:contentViewHeight];
 }
+
+#pragma mark - Actions
 
 - (IBAction)doneAction:(id)sender
 {
-    [self.view endEditing:YES];
-    [self dismissViewControllerAnimated:YES completion:^{}];
+  [self.view endEditing:YES];
+  [self dismissViewControllerAnimated:YES completion:nil];
 }
+
+- (void)dismissKeyboard:(UITapGestureRecognizer *)recognizer
+{
+  [[self view] endEditing:YES];
+}
+
+#pragma mark - Keyboard Event Handlers
 
 -(void)keyboardWillShow:(NSNotification *)notification
 {
-    NSDictionary * info = [notification userInfo];
-    double duration = [[info objectForKey:UIKeyboardAnimationDurationUserInfoKey] doubleValue];
-    CGRect kbFrame = [[info objectForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
-    kbFrame = [self.view convertRect:kbFrame fromView:nil];
-    
-    //    CGRect adjustedTextFieldFrame = [self.view convertRect:self.homeownerSignup.frame fromView:self.contentView];
-    
-    [UIView animateWithDuration:duration
-                     animations:^{
-                         self.contentViewBottomConstraint.constant = kbFrame.size.height;
-                     }
-                     completion:^(BOOL finished) {
-                         CGRect bottom = CGRectMake(0, self.scrollView.contentSize.height - 80, self.scrollView.contentSize.width, 80);
-                         [self.scrollView scrollRectToVisible:bottom animated:YES];
-                     }];
+  NSDictionary *userInfo = [notification userInfo];
+  CGRect keyboardEndFrame = [userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue];
+  NSTimeInterval duration = [userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
+  UIViewAnimationCurve curve = [userInfo[UIKeyboardAnimationCurveUserInfoKey] integerValue];
+  
+  UIView *view = [self view];
+  [view layoutIfNeeded];
+  
+  
+  // We go old school so we can use the animation curve provided
+  // by the keyboard information.
+  [UIView beginAnimations:nil context:NULL];
+  [UIView setAnimationDuration:duration];
+  [UIView setAnimationCurve:curve];
+  [UIView setAnimationBeginsFromCurrentState:YES];
+  
+  [[self scrollViewBottomConstraint] setConstant:CGRectGetHeight(keyboardEndFrame)];
+  
+  [view layoutIfNeeded];
+  
+  [UIView commitAnimations];
 }
 
 -(void)keyboardWillHide:(NSNotification *)notification
 {
-    NSDictionary * info = [notification userInfo];
-    double duration = [[info objectForKey:UIKeyboardAnimationDurationUserInfoKey] doubleValue];
-    
-    [UIView animateWithDuration:duration
-                     animations:^{
-                         self.contentViewBottomConstraint.constant = 0.0;
-                     }
-                     completion:^(BOOL finished) {
-                     }];
+  NSDictionary *userInfo = [notification userInfo];
+  NSTimeInterval duration = [userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
+  UIViewAnimationCurve curve = [userInfo[UIKeyboardAnimationCurveUserInfoKey] integerValue];
+
+  UIView *view = [self view];
+  [view layoutIfNeeded];
+  
+  
+  // We go old school so we can use the animation curve provided
+  // by the keyboard information.
+  [UIView beginAnimations:nil context:NULL];
+  [UIView setAnimationDuration:duration];
+  [UIView setAnimationCurve:curve];
+  [UIView setAnimationBeginsFromCurrentState:YES];
+  
+  [[self scrollViewBottomConstraint] setConstant:0];
+  
+  [view layoutIfNeeded];
+  
+  [UIView commitAnimations];
 }
 
 @end
